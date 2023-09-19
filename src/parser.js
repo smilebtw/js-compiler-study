@@ -2,6 +2,7 @@ import { TokenType } from "./types.js";
 
 function consume(parser, tokenType, value) {
     const t = parser.tokens[parser.pos];
+
     if (t.tokenType === tokenType && t.value === value) {
         parser.pos += 1;
         return;
