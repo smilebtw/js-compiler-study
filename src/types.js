@@ -1,12 +1,14 @@
 export const Types = { 
     VOID: "void",
     INT: "int",
+    FLOAT: "float",
 };
 
 export const Keywords = {
     VOID: "void",
     INT: "int",
     IF: "if",
+    ELSE: "else",
     LET: "let",
 };
 

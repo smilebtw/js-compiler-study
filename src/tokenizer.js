@@ -1,4 +1,4 @@
-import { TokenType, Types } from "./types.js";
+import { TokenType, Types, Keywords, KeywordSet } from "./types.js";
 
 function createToken(pos) {
     return {
@@ -9,18 +9,21 @@ function createToken(pos) {
     };
 }
 
-// Criando tudo num arquivo so, depois separar 
 // essa bomba em diferentes arquivos
 function isOperator(c) {
     return "+-*/!<>.%&|^".includes(c);
 }
 
 function isSymbol(c) {
-    return ";{}[]():,".includes(c);
+    return ";{}[]():,=".includes(c);
 }
 
 function isNumber(c) {
     return c >= "0" && c <= "9";
+}
+
+function isFloat(c) {
+    return c === ".";
 }
 
 function isWhitespace(c) {
@@ -37,12 +40,10 @@ function isIdentifer(c) {
     return isIdentiferStart(c) || isNumber(c);
 }
 
-// src = 1 + 2 * 3
 export function tokenize(src) {
     const tokens = [];
     
     for (let i = 0; ; i += 1) {
-        
         while (i < src.length && isWhitespace(src[i])) i += 1;
         if (i >= src.length) break;
 
@@ -50,7 +51,12 @@ export function tokenize(src) {
         const start = i;
         const token = createToken(start);
 
-        if (isOperator(c)) {
+        if (c === "l" && src.substring(i, i + 3) === "let" && !isIdentifer(src[i + 3])) {
+            token.tokenType = TokenType.KEYWORD;
+            token.value = src.substring(i, i + 3);
+            token.type = Types.VOID; // Defina o tipo apropriado para "let"
+            i += 2; 
+        } else if (isOperator(c)) {
             if (i + 1 < src.length && isOperator(src[i+1]))
                 i += 1;
 
@@ -61,12 +67,11 @@ export function tokenize(src) {
             token.value = c;
         } else {
             if (isNumber(c) || c === "-") {
-                i += 1;
 
                 let isNeg = c === "-";
                 let n = isNeg ? 0 : Number(c);
 
-                for(; i < src.length && isNumber(src[i]); i += 1) {
+                for(; i < src.length && isNumber(src[i+1]); i += 1) {
                     n = (n * 10) + Number(src[i]);
                 }
 
@@ -75,6 +80,7 @@ export function tokenize(src) {
                 token.value = n;
                 } else if (isIdentiferStart(c)) {
                     i += 1;
+
                     for (; i < src.length && isIdentifer(src[i]); i += 1);
 
                     const value = src.substring(start, i);
@@ -86,7 +92,6 @@ export function tokenize(src) {
                     throw `Invalid char '${c}'`;
                 }
             }
-            
             tokens.push(token);
         }
 
