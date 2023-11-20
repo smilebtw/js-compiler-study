@@ -22,10 +22,6 @@ function isNumber(c) {
     return c >= "0" && c <= "9";
 }
 
-function isFloat(c) {
-    return c === ".";
-}
-
 function isWhitespace(c) {
     return c <= " ";
 }
@@ -54,7 +50,7 @@ export function tokenize(src) {
         if (c === "l" && src.substring(i, i + 3) === "let" && !isIdentifer(src[i + 3])) {
             token.tokenType = TokenType.KEYWORD;
             token.value = src.substring(i, i + 3);
-            token.type = Types.VOID; // Defina o tipo apropriado para "let"
+            token.type = Types.VOID;
             i += 2; 
         } else if (isOperator(c)) {
             if (i + 1 < src.length && isOperator(src[i+1]))
@@ -66,24 +62,29 @@ export function tokenize(src) {
             token.tokenType = TokenType.SYMBOL;
             token.value = c;
         } else {
-            if (isNumber(c) || c === "-") {
+            if (isNumber(c) || (c === "-" && isNumber(src[i + 1]))) {
+                let isFloat = false;
+                let number = c === "-" ? "" : c;
 
-                let isNeg = c === "-";
-                let n = isNeg ? 0 : Number(c);
-
-                for(; i < src.length && isNumber(src[i+1]); i += 1) {
-                    n = (n * 10) + Number(src[i]);
+                i += 1;
+                while (i < src.length && (isNumber(src[i]) || (!isFloat && src[i] === "."))) {
+                    if (src[i] === ".") {
+                        isFloat = true;
+                    }
+                    number += src[i];
+                    i += 1;
                 }
 
                 token.tokenType = TokenType.CONST;
-                token.type = Types.INT;
-                token.value = n;
+                token.type = isFloat ? Types.FLOAT : Types.INT;
+                token.value = isFloat ? parseFloat(number) : parseInt(number);
+                i -= 1;
                 } else if (isIdentiferStart(c)) {
-                    i += 1;
+                    while (i + 1 < src.length && isIdentifer(src[i + 1])) {
+                        i += 1;
+                    }
 
-                    for (; i < src.length && isIdentifer(src[i]); i += 1);
-
-                    const value = src.substring(start, i);
+                    const value = src.substring(start, i + 1);  // Ajuste aqui para incluir o último caractere
                     const kw = KeywordSet.has(value);
 
                     token.tokenType = kw ? TokenType.KEYWORD : TokenType.IDENTIFIER;

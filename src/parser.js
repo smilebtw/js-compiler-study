@@ -1,14 +1,18 @@
 import { TokenType } from "./types.js";
 
-function consume(parser, tokenType, value) {
+function consume(parser, tokenType, value = null) {
     const t = parser.tokens[parser.pos];
 
-    if (t.tokenType === tokenType && t.value === value) {
-        parser.pos += 1;
-        return;
+    if (t.tokenType !== tokenType) {
+        throw `Expected token type ${tokenType}, but found ${t.tokenType}`;
     }
 
-    throw `${JSON.stringify(t)} != ${tokenType}: ${value}`;
+    if (value !== null && t.value !== value) {
+        throw `Expected token value ${value}, but found ${t.value}`;
+    }
+
+    parser.pos += 1;
+    return t;
 }
 
 function match(parser, tokenType) {
@@ -43,7 +47,10 @@ const nodeType = {
     UNARY: "unary",
     LITERAL: "literal",
     GROUP: "group",
-    BINARY: "binary"
+    BINARY: "binary",
+    IDENTIFIER: "identifier",
+    DECLARATION: "declaration",
+    ASSIGNMENT: "assignment",
 };
 
 function makeExprUnary(operator, right) {
@@ -77,9 +84,45 @@ function makeExprGroup(expr) {
     }
 }
 
+function makeExprIdentifier(value) {
+    return {
+        nodeType: nodeType.IDENTIFIER,
+        value
+    };
+}
+
+function makeDeclaration(identifer, initializer) {
+    return {
+        nodeType: nodeType.DECLARATION,
+        identifer,
+        initializer
+    };
+}
+
+
+function declaration(parser) {
+    consume(parser, TokenType.KEYWORD, "let");
+    const name = consume(parser, TokenType.IDENTIFIER);
+    consume(parser, TokenType.SYMBOL, "=");
+    const initializer = expression(parser);
+    if (parser.tokens[parser.pos].tokenType !== TokenType.SYMBOL || parser.tokens[parser.pos].value !== ";") {
+        throw new Error("Expected ';' at the end of declaration");
+    }
+    consume(parser, TokenType.SYMBOL, ";");
+
+    return makeDeclaration(name, initializer);
+}
+
 function primary(parser) {
     const token = parser.tokens[parser.pos];
-    if (match(parser, TokenType.CONST)) return makeExprLiteral(token.value, token.type);
+
+    if (match(parser, TokenType.CONST)) {
+        return makeExprLiteral(token.value, token.type);
+    }
+
+    if (match(parser, TokenType.IDENTIFIER)) {
+        return makeExprIdentifier(token.value);
+    }
 
     if (matchValue(parser, TokenType.SYMBOL, "(")) {
         const expr = expression(parser);
@@ -152,11 +195,21 @@ function expression(parser) {
     return equality(parser);
 }
 
+
+function parseProgram(parser) {
+    const declarations = [];
+    while (!match(parser, TokenType.EOF)) {
+        declarations.push(declaration(parser));
+    }
+
+    return declarations;
+}
+
 export function parse(tokens) {
     const parser = {
         tokens,
         pos: 0,
     };
 
-    return expression(parser);
+    return parseProgram(parser);
 }
