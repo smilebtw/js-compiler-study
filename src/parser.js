@@ -51,6 +51,9 @@ const nodeType = {
     IDENTIFIER: "identifier",
     DECLARATION: "declaration",
     ASSIGNMENT: "assignment",
+    STATEMENT: "statement",
+    BLOCK: "block",
+    IF_STATEMENT: "if_statement"
 };
 
 function makeExprUnary(operator, right) {
@@ -91,6 +94,22 @@ function makeExprIdentifier(value) {
     };
 }
 
+function makeIfStatement(condition, then, otherwise = null) {
+    return {
+        nodeType: nodeType.IF_STATEMENT,
+        condition,
+        then,
+        otherwise
+    };
+}
+
+function makeBlock(statements) {
+    return {
+        nodeType: nodeType.BLOCK,
+        statements
+    };
+}
+
 function makeDeclaration(identifer, initializer) {
     return {
         nodeType: nodeType.DECLARATION,
@@ -99,9 +118,44 @@ function makeDeclaration(identifer, initializer) {
     };
 }
 
+function makeExprStatement(expr) {
+    return {
+        nodeType: nodeType.STATEMENT,
+        expr
+    };
+}
+
+function block(parser) {
+    const statements = [];
+    while(!matchValue(parser, TokenType.SYMBOL, "}")) {
+        statements.push(statement(parser)); 
+    }
+
+    return makeBlock(statements);
+}
+
+function statement(parser) {
+    if (matchValue(parser, TokenType.SYMBOL, "{")) return block(parser);
+    if (matchValue(parser, TokenType.KEYWORD, "if")) return ifStatement(parser);
+    if (matchValue(parser, TokenType.KEYWORD, "let")) return declaration(parser);
+    const expr = expression(parser);
+    consume(parser, TokenType.SYMBOL, ';');
+    return makeExprStatement(expr);
+} 
+
+function ifStatement(parser) {
+    consume(parser, TokenType.SYMBOL, "(");
+    const condition = expression(parser);
+    consume(parser, TokenType.SYMBOL, ")");
+    const thenBranch = statement(parser);
+    let otherwise = null;
+    if (matchValue(parser, TokenType.KEYWORD, "else")) {
+        otherwise = statement(parser);
+    }
+    return makeIfStatement(condition, thenBranch, otherwise);
+}
 
 function declaration(parser) {
-    consume(parser, TokenType.KEYWORD, "let");
     const name = consume(parser, TokenType.IDENTIFIER);
     consume(parser, TokenType.SYMBOL, "=");
     const initializer = expression(parser);
@@ -197,12 +251,12 @@ function expression(parser) {
 
 
 function parseProgram(parser) {
-    const declarations = [];
+    const statements= [];
     while (!match(parser, TokenType.EOF)) {
-        declarations.push(declaration(parser));
+        statements.push(statement(parser));
     }
 
-    return declarations;
+    return statements;
 }
 
 export function parse(tokens) {

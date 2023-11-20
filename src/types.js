@@ -6,7 +6,6 @@ export const Types = {
 
 export const Keywords = {
     VOID: "void",
-    INT: "int",
     IF: "if",
     ELSE: "else",
     LET: "let",

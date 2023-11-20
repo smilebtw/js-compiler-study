@@ -9,7 +9,6 @@ function createToken(pos) {
     };
 }
 
-// essa bomba em diferentes arquivos
 function isOperator(c) {
     return "+-*/!<>.%&|^".includes(c);
 }
@@ -47,12 +46,7 @@ export function tokenize(src) {
         const start = i;
         const token = createToken(start);
 
-        if (c === "l" && src.substring(i, i + 3) === "let" && !isIdentifer(src[i + 3])) {
-            token.tokenType = TokenType.KEYWORD;
-            token.value = src.substring(i, i + 3);
-            token.type = Types.VOID;
-            i += 2; 
-        } else if (isOperator(c)) {
+        if (isOperator(c)) {
             if (i + 1 < src.length && isOperator(src[i+1]))
                 i += 1;
 
@@ -84,7 +78,7 @@ export function tokenize(src) {
                         i += 1;
                     }
 
-                    const value = src.substring(start, i + 1);  // Ajuste aqui para incluir o último caractere
+                    const value = src.substring(start, i + 1);
                     const kw = KeywordSet.has(value);
 
                     token.tokenType = kw ? TokenType.KEYWORD : TokenType.IDENTIFIER;
